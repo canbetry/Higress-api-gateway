@@ -79,7 +79,7 @@ Higress Console 里日常最常用的是这三步：
 
 | 概念 | 菜单 | 作用 |
 | --- | --- | --- |
-| 服务来源 | `服务来源` | 告诉网关后端服务在哪里，例如 `host.docker.internal:3000` |
+| 服务来源 | `服务来源` | 告诉网关后端服务在哪里，例如域名 `host.docker.internal`、端口 `3000` |
 | 域名 | `域名管理` | 告诉网关哪些 Host 归它管理，例如 `billing.localhost` |
 | 路由 | `路由管理` | 告诉网关某个域名和路径应该转发到哪个服务 |
 
@@ -142,13 +142,17 @@ http://localhost:8084
 
 填写建议：
 
+> 注意：如果后端地址是 `host.docker.internal`，服务来源类型必须选择 `DNS 域名 / DNS 服务（dns）`。不要选择 `固定地址 / static`，因为 fixed/static 只接受 `IP:端口`，不接受域名。
+
 | 字段 | 示例值 |
 | --- | --- |
 | 名称 | `billing-service` |
-| 类型 | 固定地址 / DNS 服务 |
-| 服务地址 | `host.docker.internal` |
+| 类型 | `DNS 域名 / DNS 服务（dns）` |
+| 域名 / 服务地址 | `host.docker.internal` |
 | 端口 | `3000` |
 | 协议 | `HTTP` |
+
+端口要单独填写 `3000`，不要把服务地址写成 `host.docker.internal:3000`。
 
 保存后，Higress 就知道 `billing-service` 这个后端服务在哪里。
 
@@ -227,9 +231,10 @@ curl -i http://localhost:8082/api/health \
 
 | 现象 | 常见原因 | 处理 |
 | --- | --- | --- |
+| 创建服务来源时报 `serviceSource body is not valid` | `host.docker.internal` 被按固定地址 static 提交了 | 服务来源类型改成 `DNS 域名 / DNS 服务（dns）`；static 只能填类似 `192.168.1.10:3000` 的 IP 地址 |
 | 看到 Higress 欢迎页 | Host 没匹配到域名 | 检查域名、端口、`Host` 头 |
 | 返回 404 | 路径没匹配到路由 | 检查路径匹配方式 |
-| 返回 502/503 | 后端服务不可达 | 检查服务来源是否写成了 `host.docker.internal` |
+| 返回 502/503 | 后端服务不可达 | 检查业务应用是否启动、端口是否正确、服务来源类型是否是 `DNS 域名 / DNS 服务（dns）` |
 | 静态资源打不开 | 应用以子路径部署但资源仍用根路径 | 本地优先用独立域名，不要用 `/app1` 这种前缀 |
 | 登录回调失败 | SSO Client 的 redirect URI 不一致 | 到 SSO 管理后台修改接入应用回调地址 |
 
@@ -269,8 +274,8 @@ npm run dev -w apps/web
 | 字段 | 示例值 |
 | --- | --- |
 | 名称 | `sso-web-dev` |
-| 类型 | 固定地址 / DNS 服务 |
-| 服务地址 | `host.docker.internal` |
+| 类型 | `DNS 域名 / DNS 服务（dns）` |
+| 域名 / 服务地址 | `host.docker.internal` |
 | 端口 | `5173` |
 | 协议 | `HTTP` |
 
@@ -279,8 +284,8 @@ npm run dev -w apps/web
 | 字段 | 示例值 |
 | --- | --- |
 | 名称 | `sso-api` |
-| 类型 | 固定地址 / DNS 服务 |
-| 服务地址 | `host.docker.internal` |
+| 类型 | `DNS 域名 / DNS 服务（dns）` |
+| 域名 / 服务地址 | `host.docker.internal` |
 | 端口 | `4000` |
 | 协议 | `HTTP` |
 
@@ -686,8 +691,8 @@ Higress 使用 `ext-auth` 插件调用它。
 | 字段 | 示例值 |
 | --- | --- |
 | 名称 | `sso-authz` |
-| 类型 | 固定地址 / DNS 服务 |
-| 服务地址 | `host.docker.internal` |
+| 类型 | `DNS 域名 / DNS 服务（dns）` |
+| 域名 / 服务地址 | `host.docker.internal` |
 | 端口 | `4000` |
 
 ### 2. 在路由上启用外部认证
