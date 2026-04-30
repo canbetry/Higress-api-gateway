@@ -259,6 +259,15 @@ npm run dev -w apps/web
 
 建议开两个终端分别启动 API 和 Web，方便看日志。
 
+启动后先绕过网关直连确认：
+
+```bash
+curl -i http://localhost:4000/health
+curl -I http://localhost:5173/
+```
+
+只有这两个地址先通了，Higress 才能通过 `host.docker.internal:5173` 和 `host.docker.internal:4000` 转发到 SSO。
+
 ### 1. 创建 SSO 服务来源
 
 本地开发最简单的方式，是让网关转发到 Vite Web 服务，由 Vite 再代理 `/auth`、`/login`、`/oidc` 到 API。
@@ -330,6 +339,8 @@ npm run dev -w apps/web
 | 后端服务 | `sso-web-dev` |
 | 后端端口 | `5173` |
 
+注意：`sso-web-dev` 是服务来源名称，`sso-web-route` 是路由名称，两者不是同一个概念。如果你把服务来源也命名成了 `sso-web-route`，路由里的“后端服务”就必须选择 `sso-web-route`。
+
 保存后访问：
 
 ```text
@@ -361,6 +372,8 @@ curl -i http://localhost:8082/oidc/.well-known/openid-configuration \
 ```
 
 如果 `sso-api.localhost/health` 返回 `{"status":"ok"}`，说明网关到 SSO API 的链路通了。如果 `sso.localhost/oidc/.well-known/openid-configuration` 返回 OIDC 配置，说明通过 SSO Web 入口代理 OIDC 也通了。
+
+如果访问 `http://sso.localhost:8082/` 返回 `503 Service Unavailable` 且错误里有 `Connection refused`，通常表示路由已经命中，但 SSO Web/API 没启动，或者服务来源端口填错。先确认 `localhost:5173` 和 `localhost:4000/health` 能直连访问，再检查路由后端服务是否选中了正确的服务来源。
 
 ### 4. 调整 SSO 外部 Issuer
 
