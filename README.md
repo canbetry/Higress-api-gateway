@@ -20,6 +20,20 @@
 | Gateway Metrics | http://localhost:15020 | 网关健康和指标端口 |
 | Nacos Console | http://localhost:8888 | Higress Standalone 配置存储 |
 
+当前项目集群本地路由可以直接写入：
+
+```bash
+./scripts/configure-ai-image-routes.sh
+```
+
+该脚本按当前 Higress Standalone 控制台实际使用的 `Ingress + McpBridge` 方式配置：
+
+| 域名 | 后端 |
+| --- | --- |
+| `sso.localhost` | `host.docker.internal:5173` |
+| `sso-api.localhost` | `host.docker.internal:4000` |
+| `image.localhost` | `host.docker.internal:3008` |
+
 默认 Higress 管理员：
 
 ```text
