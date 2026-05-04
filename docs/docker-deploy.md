@@ -129,7 +129,7 @@ http://image.localhost:8082/image
 公网暴露时只把 Cloudflare Tunnel 指向 Higress Gateway：
 
 ```text
-Cloudflare Tunnel -> http://localhost:8082 -> Higress -> SSO / AI Image Studio
+Cloudflare Tunnel -> http://localhost:8082 -> Higress -> 光年AI 管理台 / 光年AI Image Gen
 ```
 
 不要为 SSO API、SSO Web、AI 生图应用、MinIO 或 MySQL 单独创建公网 Tunnel。完整步骤见 [Cloudflare Tunnel 公网暴露方案](cloudflare-tunnel.md)。
