@@ -4,6 +4,9 @@ set -euo pipefail
 API_SERVER_CONTAINER="${API_SERVER_CONTAINER:-higress-apiserver-1}"
 API_SERVER_URL="${API_SERVER_URL:-https://127.0.0.1:8443}"
 NAMESPACE="${NAMESPACE:-higress-system}"
+PUBLIC_SSO_HOST="${PUBLIC_SSO_HOST:-}"
+PUBLIC_SSO_API_HOST="${PUBLIC_SSO_API_HOST:-}"
+PUBLIC_IMAGE_HOST="${PUBLIC_IMAGE_HOST:-}"
 
 resource_url() {
   local namespace="$1"
@@ -75,11 +78,47 @@ apply_resource() {
   echo "OK ${resource_type}/${resource_name}"
 }
 
+apply_ingress() {
+  local resource_name="$1"
+  local host="$2"
+  local destination="$3"
+
+  apply_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "${resource_name}" <<YAML
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ${resource_name}
+  namespace: higress-system
+  labels:
+    higress.io/domain_${host}: "true"
+    higress.io/resource-definer: higress
+  annotations:
+    higress.io/destination: ${destination}
+    higress.io/ignore-path-case: "false"
+spec:
+  ingressClassName: higress
+  rules:
+  - host: ${host}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          resource:
+            apiGroup: networking.higress.io
+            kind: McpBridge
+            name: default
+YAML
+}
+
 # This Higress standalone install is driven by Console-style Ingress + McpBridge.
 # Clean earlier Gateway API resources if this script is re-run after experiments.
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sso-web-route"
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sso-api-route"
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "ai-image-studio-route"
+delete_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "sso-web-public-route"
+delete_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "sso-api-public-route"
+delete_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "ai-image-studio-public-route"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-web-dev"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-api"
 delete_resource "${NAMESPACE}" "v1" "services" "ai-image-studio"
@@ -124,86 +163,21 @@ spec:
     type: dns
 YAML
 
-apply_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "sso-web-route" <<'YAML'
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: sso-web-route
-  namespace: higress-system
-  labels:
-    higress.io/domain_sso.localhost: "true"
-    higress.io/resource-definer: higress
-  annotations:
-    higress.io/destination: user-system-web.dns:5173
-    higress.io/ignore-path-case: "false"
-spec:
-  ingressClassName: higress
-  rules:
-  - host: sso.localhost
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          resource:
-            apiGroup: networking.higress.io
-            kind: McpBridge
-            name: default
-YAML
+apply_ingress "sso-web-route" "sso.localhost" "user-system-web.dns:5173"
+apply_ingress "sso-api-route" "sso-api.localhost" "user-system-api.dns:4000"
+apply_ingress "ai-image-studio-route" "image.localhost" "ai-image-studio.dns:3008"
 
-apply_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "sso-api-route" <<'YAML'
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: sso-api-route
-  namespace: higress-system
-  labels:
-    higress.io/domain_sso-api.localhost: "true"
-    higress.io/resource-definer: higress
-  annotations:
-    higress.io/destination: user-system-api.dns:4000
-    higress.io/ignore-path-case: "false"
-spec:
-  ingressClassName: higress
-  rules:
-  - host: sso-api.localhost
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          resource:
-            apiGroup: networking.higress.io
-            kind: McpBridge
-            name: default
-YAML
+if [[ -n "${PUBLIC_SSO_HOST}" ]]; then
+  apply_ingress "sso-web-public-route" "${PUBLIC_SSO_HOST}" "user-system-web.dns:5173"
+fi
 
-apply_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "ai-image-studio-route" <<'YAML'
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: ai-image-studio-route
-  namespace: higress-system
-  labels:
-    higress.io/domain_image.localhost: "true"
-    higress.io/resource-definer: higress
-  annotations:
-    higress.io/destination: ai-image-studio.dns:3008
-    higress.io/ignore-path-case: "false"
-spec:
-  ingressClassName: higress
-  rules:
-  - host: image.localhost
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          resource:
-            apiGroup: networking.higress.io
-            kind: McpBridge
-            name: default
-YAML
+if [[ -n "${PUBLIC_SSO_API_HOST}" ]]; then
+  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "user-system-api.dns:4000"
+fi
+
+if [[ -n "${PUBLIC_IMAGE_HOST}" ]]; then
+  apply_ingress "ai-image-studio-public-route" "${PUBLIC_IMAGE_HOST}" "ai-image-studio.dns:3008"
+fi
 
 cat <<'TEXT'
 OK project routes configured.
@@ -213,3 +187,13 @@ OK project routes configured.
   curl -i http://localhost:8082/health -H 'Host: sso-api.localhost'
   curl -i http://localhost:8082/api/health -H 'Host: image.localhost'
 TEXT
+
+if [[ -n "${PUBLIC_SSO_HOST}${PUBLIC_SSO_API_HOST}${PUBLIC_IMAGE_HOST}" ]]; then
+  cat <<TEXT
+
+公网 Host 已写入：
+  PUBLIC_SSO_HOST=${PUBLIC_SSO_HOST:-未设置}
+  PUBLIC_SSO_API_HOST=${PUBLIC_SSO_API_HOST:-未设置}
+  PUBLIC_IMAGE_HOST=${PUBLIC_IMAGE_HOST:-未设置}
+TEXT
+fi

@@ -41,6 +41,22 @@ username: admin
 password: admin
 ```
 
+## Docker 一键部署
+
+新机器上只需要 Docker / Docker Compose：
+
+```bash
+./scripts/dev-up.sh
+```
+
+启动后可用 `./scripts/smoke-test.sh` 做最小验证；需要把 SSO 和 AI 生图应用注册到本地网关时执行：
+
+```bash
+./scripts/configure-ai-image-routes.sh
+```
+
+完整部署、路由写入、常用运维命令和 Console 手动配置口径见 [Docker 一键部署](docs/docker-deploy.md)。如果要通过 Cloudflare Tunnel 暴露公网，只把 Tunnel 指到 `http://localhost:8082`，公网 Host 的写入方式见 [Cloudflare Tunnel 公网暴露方案](docs/cloudflare-tunnel.md)。
+
 ## 常用命令
 
 在项目根目录 `/Volumes/Macintosh HD 2/Develope/project-cluster` 执行：
