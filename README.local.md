@@ -44,7 +44,7 @@ develop 网关会复制一份运行时配置到 `.runtime/develop/compose`，使
 - Console：`http://localhost:18084`
 - Nacos Console：`http://localhost:18888`
 - SSO develop：`http://sso-dev.localhost:18082`
-- Image Gen develop：`http://image-dev.localhost:18082/image`
+- Image Gen develop：`http://img-dev.localhost:18082/image`
 
 停止 develop 网关：
 

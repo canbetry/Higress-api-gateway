@@ -11,6 +11,9 @@ SSO_WEB_PORT="${SSO_WEB_PORT:-5173}"
 SSO_API_PORT="${SSO_API_PORT:-4000}"
 AI_IMAGE_PORT="${AI_IMAGE_PORT:-3008}"
 GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-8082}"
+SSO_WEB_SERVICE_NAME="${SSO_WEB_SERVICE_NAME:-user-system-web}"
+SSO_API_SERVICE_NAME="${SSO_API_SERVICE_NAME:-user-system-api}"
+AI_IMAGE_SERVICE_NAME="${AI_IMAGE_SERVICE_NAME:-ai-image-studio}"
 PUBLIC_SSO_HOST="${PUBLIC_SSO_HOST:-}"
 PUBLIC_SSO_API_HOST="${PUBLIC_SSO_API_HOST:-}"
 PUBLIC_IMAGE_HOST="${PUBLIC_IMAGE_HOST:-}"
@@ -130,7 +133,7 @@ delete_resource "${NAMESPACE}" "v1" "services" "sso-web-dev"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-api"
 delete_resource "${NAMESPACE}" "v1" "services" "ai-image-studio"
 
-apply_resource "${NAMESPACE}" "networking.higress.io/v1" "mcpbridges" "default" <<'YAML'
+apply_resource "${NAMESPACE}" "networking.higress.io/v1" "mcpbridges" "default" <<YAML
 apiVersion: networking.higress.io/v1
 kind: McpBridge
 metadata:
@@ -149,7 +152,7 @@ spec:
     port: 8848
     type: nacos2
   - domain: host.docker.internal
-    name: user-system-web
+    name: ${SSO_WEB_SERVICE_NAME}
     port: ${SSO_WEB_PORT}
     protocol: http
     type: dns
@@ -159,31 +162,31 @@ spec:
     protocol: http
     type: dns
   - domain: host.docker.internal
-    name: user-system-api
+    name: ${SSO_API_SERVICE_NAME}
     port: ${SSO_API_PORT}
     protocol: http
     type: dns
   - domain: host.docker.internal
-    name: ai-image-studio
+    name: ${AI_IMAGE_SERVICE_NAME}
     port: ${AI_IMAGE_PORT}
     protocol: http
     type: dns
 YAML
 
-apply_ingress "sso-web-route" "${LOCAL_SSO_HOST}" "user-system-web.dns:${SSO_WEB_PORT}"
-apply_ingress "sso-api-route" "${LOCAL_SSO_API_HOST}" "user-system-api.dns:${SSO_API_PORT}"
-apply_ingress "ai-image-studio-route" "${LOCAL_IMAGE_HOST}" "ai-image-studio.dns:${AI_IMAGE_PORT}"
+apply_ingress "sso-web-route" "${LOCAL_SSO_HOST}" "${SSO_WEB_SERVICE_NAME}.dns:${SSO_WEB_PORT}"
+apply_ingress "sso-api-route" "${LOCAL_SSO_API_HOST}" "${SSO_API_SERVICE_NAME}.dns:${SSO_API_PORT}"
+apply_ingress "ai-image-studio-route" "${LOCAL_IMAGE_HOST}" "${AI_IMAGE_SERVICE_NAME}.dns:${AI_IMAGE_PORT}"
 
 if [[ -n "${PUBLIC_SSO_HOST}" ]]; then
-  apply_ingress "sso-web-public-route" "${PUBLIC_SSO_HOST}" "user-system-web.dns:${SSO_WEB_PORT}"
+  apply_ingress "sso-web-public-route" "${PUBLIC_SSO_HOST}" "${SSO_WEB_SERVICE_NAME}.dns:${SSO_WEB_PORT}"
 fi
 
 if [[ -n "${PUBLIC_SSO_API_HOST}" ]]; then
-  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "user-system-api.dns:${SSO_API_PORT}"
+  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "${SSO_API_SERVICE_NAME}.dns:${SSO_API_PORT}"
 fi
 
 if [[ -n "${PUBLIC_IMAGE_HOST}" ]]; then
-  apply_ingress "ai-image-studio-public-route" "${PUBLIC_IMAGE_HOST}" "ai-image-studio.dns:${AI_IMAGE_PORT}"
+  apply_ingress "ai-image-studio-public-route" "${PUBLIC_IMAGE_HOST}" "${AI_IMAGE_SERVICE_NAME}.dns:${AI_IMAGE_PORT}"
 fi
 
 cat <<'TEXT'

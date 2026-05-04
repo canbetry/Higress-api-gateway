@@ -56,7 +56,10 @@ HIGRESS_COMPOSE_PROJECT="${HIGRESS_DEV_PROJECT:-higress-dev}" \
 API_SERVER_CONTAINER="${HIGRESS_DEV_PROJECT:-higress-dev}-apiserver-1" \
 LOCAL_SSO_HOST="${HIGRESS_DEV_SSO_HOST:-sso-dev.localhost}" \
 LOCAL_SSO_API_HOST="${HIGRESS_DEV_SSO_API_HOST:-sso-api-dev.localhost}" \
-LOCAL_IMAGE_HOST="${HIGRESS_DEV_IMAGE_HOST:-image-dev.localhost}" \
+LOCAL_IMAGE_HOST="${HIGRESS_DEV_IMAGE_HOST:-img-dev.localhost}" \
+SSO_WEB_SERVICE_NAME="user-system-web-dev" \
+SSO_API_SERVICE_NAME="user-system-api-dev" \
+AI_IMAGE_SERVICE_NAME="ai-image-studio-dev" \
 SSO_WEB_PORT="${SSO_DEV_WEB_PORT:-5273}" \
 SSO_API_PORT="${SSO_DEV_API_PORT:-4100}" \
 AI_IMAGE_PORT="${AI_IMAGE_DEV_APP_PORT:-3108}" \
@@ -67,4 +70,4 @@ echo ""
 echo "Higress develop Gateway: http://localhost:18082"
 echo "Higress develop Console: http://localhost:18084"
 echo "SSO develop via Gateway: http://sso-dev.localhost:18082"
-echo "Image Gen develop via Gateway: http://image-dev.localhost:18082/image"
+echo "Image Gen develop via Gateway: http://img-dev.localhost:18082/image"
