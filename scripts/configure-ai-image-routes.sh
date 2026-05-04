@@ -4,6 +4,13 @@ set -euo pipefail
 API_SERVER_CONTAINER="${API_SERVER_CONTAINER:-higress-apiserver-1}"
 API_SERVER_URL="${API_SERVER_URL:-https://127.0.0.1:8443}"
 NAMESPACE="${NAMESPACE:-higress-system}"
+LOCAL_SSO_HOST="${LOCAL_SSO_HOST:-sso.localhost}"
+LOCAL_SSO_API_HOST="${LOCAL_SSO_API_HOST:-sso-api.localhost}"
+LOCAL_IMAGE_HOST="${LOCAL_IMAGE_HOST:-image.localhost}"
+SSO_WEB_PORT="${SSO_WEB_PORT:-5173}"
+SSO_API_PORT="${SSO_API_PORT:-4000}"
+AI_IMAGE_PORT="${AI_IMAGE_PORT:-3008}"
+GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-8082}"
 PUBLIC_SSO_HOST="${PUBLIC_SSO_HOST:-}"
 PUBLIC_SSO_API_HOST="${PUBLIC_SSO_API_HOST:-}"
 PUBLIC_IMAGE_HOST="${PUBLIC_IMAGE_HOST:-}"
@@ -143,49 +150,51 @@ spec:
     type: nacos2
   - domain: host.docker.internal
     name: user-system-web
-    port: 5173
+    port: ${SSO_WEB_PORT}
     protocol: http
     type: dns
   - domain: host.docker.internal
     name: sso-api
-    port: 4000
+    port: ${SSO_API_PORT}
     protocol: http
     type: dns
   - domain: host.docker.internal
     name: user-system-api
-    port: 4000
+    port: ${SSO_API_PORT}
     protocol: http
     type: dns
   - domain: host.docker.internal
     name: ai-image-studio
-    port: 3008
+    port: ${AI_IMAGE_PORT}
     protocol: http
     type: dns
 YAML
 
-apply_ingress "sso-web-route" "sso.localhost" "user-system-web.dns:5173"
-apply_ingress "sso-api-route" "sso-api.localhost" "user-system-api.dns:4000"
-apply_ingress "ai-image-studio-route" "image.localhost" "ai-image-studio.dns:3008"
+apply_ingress "sso-web-route" "${LOCAL_SSO_HOST}" "user-system-web.dns:${SSO_WEB_PORT}"
+apply_ingress "sso-api-route" "${LOCAL_SSO_API_HOST}" "user-system-api.dns:${SSO_API_PORT}"
+apply_ingress "ai-image-studio-route" "${LOCAL_IMAGE_HOST}" "ai-image-studio.dns:${AI_IMAGE_PORT}"
 
 if [[ -n "${PUBLIC_SSO_HOST}" ]]; then
-  apply_ingress "sso-web-public-route" "${PUBLIC_SSO_HOST}" "user-system-web.dns:5173"
+  apply_ingress "sso-web-public-route" "${PUBLIC_SSO_HOST}" "user-system-web.dns:${SSO_WEB_PORT}"
 fi
 
 if [[ -n "${PUBLIC_SSO_API_HOST}" ]]; then
-  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "user-system-api.dns:4000"
+  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "user-system-api.dns:${SSO_API_PORT}"
 fi
 
 if [[ -n "${PUBLIC_IMAGE_HOST}" ]]; then
-  apply_ingress "ai-image-studio-public-route" "${PUBLIC_IMAGE_HOST}" "ai-image-studio.dns:3008"
+  apply_ingress "ai-image-studio-public-route" "${PUBLIC_IMAGE_HOST}" "ai-image-studio.dns:${AI_IMAGE_PORT}"
 fi
 
 cat <<'TEXT'
 OK project routes configured.
 
 验证入口：
-  curl -i http://localhost:8082/ -H 'Host: sso.localhost'
-  curl -i http://localhost:8082/health -H 'Host: sso-api.localhost'
-  curl -i http://localhost:8082/api/health -H 'Host: image.localhost'
+TEXT
+cat <<TEXT
+  curl -i http://localhost:${GATEWAY_HTTP_PORT}/ -H 'Host: ${LOCAL_SSO_HOST}'
+  curl -i http://localhost:${GATEWAY_HTTP_PORT}/health -H 'Host: ${LOCAL_SSO_API_HOST}'
+  curl -i http://localhost:${GATEWAY_HTTP_PORT}/api/health -H 'Host: ${LOCAL_IMAGE_HOST}'
 TEXT
 
 if [[ -n "${PUBLIC_SSO_HOST}${PUBLIC_SSO_API_HOST}${PUBLIC_IMAGE_HOST}" ]]; then

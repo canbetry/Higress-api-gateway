@@ -16,7 +16,8 @@
 
 cd "$(dirname -- "$0")"
 ROOT=$(dirname -- "$(pwd -P)")
-COMPOSE_ROOT="$ROOT/compose"
+COMPOSE_ROOT="${HIGRESS_COMPOSE_ROOT:-$ROOT/compose}"
+COMPOSE_PROJECT="${HIGRESS_COMPOSE_PROJECT:-higress}"
 cd - > /dev/null
 
 CONFIGURED_MARK="$COMPOSE_ROOT/.configured"
@@ -28,7 +29,7 @@ fi
 source "$ROOT/bin/base.sh"
 
 source "$COMPOSE_ROOT/.env"
-cd "$COMPOSE_ROOT" && COMPOSE_PROFILES="$COMPOSE_PROFILES" runDockerCompose -p higress up -d
+cd "$COMPOSE_ROOT" && COMPOSE_PROFILES="$COMPOSE_PROFILES" runDockerCompose -p "$COMPOSE_PROJECT" up -d
 
 retVal=$?
 if [ $retVal -ne 0 ]; then
