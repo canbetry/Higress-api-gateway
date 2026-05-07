@@ -9,10 +9,10 @@
 | 公网 Host | Cloudflare Tunnel service | Higress 后端 |
 | --- | --- | --- |
 | `sso.example.com` | `http://localhost:8082` | `host.docker.internal:5173` |
-| `sso-api.example.com` | `http://localhost:8082` | `host.docker.internal:4000` |
+| `sso-api.example.com` | `http://localhost:8082` | 仅健康检查 `/health` |
 | `image.example.com` | `http://localhost:8082` | `host.docker.internal:3008` |
 
-也可以不用 `sso-api.example.com`，但保留它方便公网健康检查和 OIDC/API 调试。
+也可以不用 `sso-api.example.com`。如果保留，默认只暴露 `/health`，不要把 `/admin/*`、`/internal/*` 或完整 API 面向公网。
 
 ## 1. 登录 Cloudflare
 

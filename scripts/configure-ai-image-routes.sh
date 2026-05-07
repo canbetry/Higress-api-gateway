@@ -92,6 +92,7 @@ apply_ingress() {
   local resource_name="$1"
   local host="$2"
   local destination="$3"
+  local path="${4:-/}"
 
   apply_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "${resource_name}" <<YAML
 apiVersion: networking.k8s.io/v1
@@ -111,7 +112,7 @@ spec:
   - host: ${host}
     http:
       paths:
-      - path: /
+      - path: ${path}
         pathType: Prefix
         backend:
           resource:
@@ -182,7 +183,7 @@ if [[ -n "${PUBLIC_SSO_HOST}" ]]; then
 fi
 
 if [[ -n "${PUBLIC_SSO_API_HOST}" ]]; then
-  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "${SSO_API_SERVICE_NAME}.dns:${SSO_API_PORT}"
+  apply_ingress "sso-api-public-route" "${PUBLIC_SSO_API_HOST}" "${SSO_API_SERVICE_NAME}.dns:${SSO_API_PORT}" "/health"
 fi
 
 if [[ -n "${PUBLIC_IMAGE_HOST}" ]]; then
@@ -203,9 +204,9 @@ TEXT
 if [[ -n "${PUBLIC_SSO_HOST}${PUBLIC_SSO_API_HOST}${PUBLIC_IMAGE_HOST}" ]]; then
   cat <<TEXT
 
-公网 Host 已写入：
+ 公网 Host 已写入：
   PUBLIC_SSO_HOST=${PUBLIC_SSO_HOST:-未设置}
-  PUBLIC_SSO_API_HOST=${PUBLIC_SSO_API_HOST:-未设置}
+  PUBLIC_SSO_API_HOST=${PUBLIC_SSO_API_HOST:-未设置}（仅 /health）
   PUBLIC_IMAGE_HOST=${PUBLIC_IMAGE_HOST:-未设置}
 TEXT
 fi
