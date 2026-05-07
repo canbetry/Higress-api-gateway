@@ -4,13 +4,14 @@
 
 ## 推荐域名
 
-准备三个公网 Host，全部指向同一个 Tunnel，本机服务统一落到 `http://localhost:8082`：
+准备公网 Host，全部指向同一个 Tunnel，本机服务统一落到 `http://localhost:8082`：
 
 | 公网 Host | Cloudflare Tunnel service | Higress 后端 |
 | --- | --- | --- |
 | `sso.example.com` | `http://localhost:8082` | `host.docker.internal:5173` |
 | `sso-api.example.com` | `http://localhost:8082` | 仅健康检查 `/health` |
 | `image.example.com` | `http://localhost:8082` | `host.docker.internal:3008` |
+| `sub2api.example.com` | `http://localhost:8082` | `host.docker.internal:8080` |
 
 也可以不用 `sso-api.example.com`。如果保留，默认只暴露 `/health`，不要把 `/admin/*`、`/internal/*` 或完整 API 面向公网。
 
@@ -39,6 +40,7 @@ cloudflared tunnel list
 cloudflared tunnel route dns project-cluster sso.example.com
 cloudflared tunnel route dns project-cluster sso-api.example.com
 cloudflared tunnel route dns project-cluster image.example.com
+cloudflared tunnel route dns project-cluster sub2api.example.com
 ```
 
 ## 4. 配置 cloudflared
@@ -55,6 +57,8 @@ ingress:
   - hostname: sso-api.example.com
     service: http://localhost:8082
   - hostname: image.example.com
+    service: http://localhost:8082
+  - hostname: sub2api.example.com
     service: http://localhost:8082
   - service: http_status:404
 ```
@@ -100,6 +104,7 @@ cd ../higress-api-gateway
 PUBLIC_SSO_HOST=sso.example.com \
 PUBLIC_SSO_API_HOST=sso-api.example.com \
 PUBLIC_IMAGE_HOST=image.example.com \
+PUBLIC_SUB2API_HOST=sub2api.example.com \
 ./scripts/configure-ai-image-routes.sh
 ```
 
@@ -126,11 +131,12 @@ curl -i https://sso.example.com/
 curl -i https://sso-api.example.com/health
 curl -i https://sso.example.com/oidc/.well-known/openid-configuration
 curl -i https://image.example.com/api/health
+curl -i https://sub2api.example.com/health
 ```
 
 ## 安全边界
 
 - Cloudflare Tunnel 的 service 只写 `http://localhost:8082`。
-- 不要给 `localhost:4000`、`localhost:5173`、`localhost:3008`、`localhost:9000`、`localhost:3307` 创建公网 Tunnel。
+- 不要给 `localhost:4000`、`localhost:5173`、`localhost:3008`、`localhost:8080`、`localhost:9000`、`localhost:3307` 创建公网 Tunnel。
 - 生产使用 HTTPS 域名作为 OIDC issuer 和 OAuth redirect URI。
 - 后续认证、限流、访问控制插件统一放在 Higress。

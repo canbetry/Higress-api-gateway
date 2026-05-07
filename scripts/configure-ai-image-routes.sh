@@ -7,16 +7,20 @@ NAMESPACE="${NAMESPACE:-higress-system}"
 LOCAL_SSO_HOST="${LOCAL_SSO_HOST:-sso.localhost}"
 LOCAL_SSO_API_HOST="${LOCAL_SSO_API_HOST:-sso-api.localhost}"
 LOCAL_IMAGE_HOST="${LOCAL_IMAGE_HOST:-image.localhost}"
+LOCAL_SUB2API_HOST="${LOCAL_SUB2API_HOST:-sub2api.localhost}"
 SSO_WEB_PORT="${SSO_WEB_PORT:-5173}"
 SSO_API_PORT="${SSO_API_PORT:-4000}"
 AI_IMAGE_PORT="${AI_IMAGE_PORT:-3008}"
+SUB2API_PORT="${SUB2API_PORT:-8080}"
 GATEWAY_HTTP_PORT="${GATEWAY_HTTP_PORT:-8082}"
 SSO_WEB_SERVICE_NAME="${SSO_WEB_SERVICE_NAME:-user-system-web}"
 SSO_API_SERVICE_NAME="${SSO_API_SERVICE_NAME:-user-system-api}"
 AI_IMAGE_SERVICE_NAME="${AI_IMAGE_SERVICE_NAME:-ai-image-studio}"
+SUB2API_SERVICE_NAME="${SUB2API_SERVICE_NAME:-sub2api}"
 PUBLIC_SSO_HOST="${PUBLIC_SSO_HOST:-}"
 PUBLIC_SSO_API_HOST="${PUBLIC_SSO_API_HOST:-}"
 PUBLIC_IMAGE_HOST="${PUBLIC_IMAGE_HOST:-}"
+PUBLIC_SUB2API_HOST="${PUBLIC_SUB2API_HOST:-}"
 
 resource_url() {
   local namespace="$1"
@@ -127,9 +131,11 @@ YAML
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sso-web-route"
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sso-api-route"
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "ai-image-studio-route"
+delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sub2api-route"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-web-dev"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-api"
 delete_resource "${NAMESPACE}" "v1" "services" "ai-image-studio"
+delete_resource "${NAMESPACE}" "v1" "services" "sub2api"
 
 apply_resource "${NAMESPACE}" "networking.higress.io/v1" "mcpbridges" "default" <<YAML
 apiVersion: networking.higress.io/v1
@@ -169,11 +175,17 @@ spec:
     port: ${AI_IMAGE_PORT}
     protocol: http
     type: dns
+  - domain: host.docker.internal
+    name: ${SUB2API_SERVICE_NAME}
+    port: ${SUB2API_PORT}
+    protocol: http
+    type: dns
 YAML
 
 apply_ingress "sso-web-route" "${LOCAL_SSO_HOST}" "${SSO_WEB_SERVICE_NAME}.dns:${SSO_WEB_PORT}"
 apply_ingress "sso-api-route" "${LOCAL_SSO_API_HOST}" "${SSO_API_SERVICE_NAME}.dns:${SSO_API_PORT}"
 apply_ingress "ai-image-studio-route" "${LOCAL_IMAGE_HOST}" "${AI_IMAGE_SERVICE_NAME}.dns:${AI_IMAGE_PORT}"
+apply_ingress "sub2api-route" "${LOCAL_SUB2API_HOST}" "${SUB2API_SERVICE_NAME}.dns:${SUB2API_PORT}"
 
 # Public routes are optional; when PUBLIC_* is omitted, preserve existing public
 # ingress resources to avoid accidentally taking domains offline during local-only updates.
@@ -189,6 +201,10 @@ if [[ -n "${PUBLIC_IMAGE_HOST}" ]]; then
   apply_ingress "ai-image-studio-public-route" "${PUBLIC_IMAGE_HOST}" "${AI_IMAGE_SERVICE_NAME}.dns:${AI_IMAGE_PORT}"
 fi
 
+if [[ -n "${PUBLIC_SUB2API_HOST}" ]]; then
+  apply_ingress "sub2api-public-route" "${PUBLIC_SUB2API_HOST}" "${SUB2API_SERVICE_NAME}.dns:${SUB2API_PORT}"
+fi
+
 cat <<'TEXT'
 OK project routes configured.
 
@@ -198,14 +214,16 @@ cat <<TEXT
   curl -i http://localhost:${GATEWAY_HTTP_PORT}/ -H 'Host: ${LOCAL_SSO_HOST}'
   curl -i http://localhost:${GATEWAY_HTTP_PORT}/health -H 'Host: ${LOCAL_SSO_API_HOST}'
   curl -i http://localhost:${GATEWAY_HTTP_PORT}/api/health -H 'Host: ${LOCAL_IMAGE_HOST}'
+  curl -i http://localhost:${GATEWAY_HTTP_PORT}/health -H 'Host: ${LOCAL_SUB2API_HOST}'
 TEXT
 
-if [[ -n "${PUBLIC_SSO_HOST}${PUBLIC_SSO_API_HOST}${PUBLIC_IMAGE_HOST}" ]]; then
+if [[ -n "${PUBLIC_SSO_HOST}${PUBLIC_SSO_API_HOST}${PUBLIC_IMAGE_HOST}${PUBLIC_SUB2API_HOST}" ]]; then
   cat <<TEXT
 
  公网 Host 已写入：
   PUBLIC_SSO_HOST=${PUBLIC_SSO_HOST:-未设置}
   PUBLIC_SSO_API_HOST=${PUBLIC_SSO_API_HOST:-未设置}（仅 /health）
   PUBLIC_IMAGE_HOST=${PUBLIC_IMAGE_HOST:-未设置}
+  PUBLIC_SUB2API_HOST=${PUBLIC_SUB2API_HOST:-未设置}
 TEXT
 fi
