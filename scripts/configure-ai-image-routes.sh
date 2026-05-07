@@ -127,9 +127,6 @@ YAML
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sso-web-route"
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "sso-api-route"
 delete_resource "${NAMESPACE}" "gateway.networking.k8s.io/v1beta1" "httproutes" "ai-image-studio-route"
-delete_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "sso-web-public-route"
-delete_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "sso-api-public-route"
-delete_resource "${NAMESPACE}" "networking.k8s.io/v1" "ingresses" "ai-image-studio-public-route"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-web-dev"
 delete_resource "${NAMESPACE}" "v1" "services" "sso-api"
 delete_resource "${NAMESPACE}" "v1" "services" "ai-image-studio"
@@ -178,6 +175,8 @@ apply_ingress "sso-web-route" "${LOCAL_SSO_HOST}" "${SSO_WEB_SERVICE_NAME}.dns:$
 apply_ingress "sso-api-route" "${LOCAL_SSO_API_HOST}" "${SSO_API_SERVICE_NAME}.dns:${SSO_API_PORT}"
 apply_ingress "ai-image-studio-route" "${LOCAL_IMAGE_HOST}" "${AI_IMAGE_SERVICE_NAME}.dns:${AI_IMAGE_PORT}"
 
+# Public routes are optional; when PUBLIC_* is omitted, preserve existing public
+# ingress resources to avoid accidentally taking domains offline during local-only updates.
 if [[ -n "${PUBLIC_SSO_HOST}" ]]; then
   apply_ingress "sso-web-public-route" "${PUBLIC_SSO_HOST}" "${SSO_WEB_SERVICE_NAME}.dns:${SSO_WEB_PORT}"
 fi
